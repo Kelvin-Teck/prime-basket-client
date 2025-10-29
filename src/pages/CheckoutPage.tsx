@@ -9,14 +9,25 @@ import { formatCurrency } from "../libs/utils";
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const { clearCart } = useCartStore();
+
   const [formData, setFormData] = useState({
-    email: "",
-    firstName: "",
-    lastName: "",
-    address: "",
-    city: "",
-    state: "",
-    zipCode: "",
+    // Shipping Information (Required fields based on Prisma schema)
+    shippingName: "",
+    shippingEmail: "",
+    shippingPhone: "",
+    shippingAddress: "",
+    shippingCity: "",
+    shippingState: "",
+    shippingZip: "",
+    shippingCountry: "NG",
+
+    // Payment
+    paymentMethod: "card",
+
+    // Notes
+    customerNotes: "",
+
+    // Card details (not sent to backend, just for UI)
     cardNumber: "",
     expiryDate: "",
     cvv: "",
@@ -29,18 +40,41 @@ const CheckoutPage: React.FC = () => {
   });
 
   const createOrderMutation = useMutation({
-    mutationFn: () => orderService.create(cartItems || []),
+    mutationFn: () => {
+      // Only send fields that match the Prisma Order model
+      const orderData = {
+        shippingName: formData.shippingName,
+        shippingEmail: formData.shippingEmail,
+        shippingPhone: formData.shippingPhone,
+        shippingAddress: formData.shippingAddress,
+        shippingCity: formData.shippingCity,
+        shippingState: formData.shippingState,
+        shippingZip: formData.shippingZip,
+        shippingCountry: formData.shippingCountry,
+        paymentMethod: formData.paymentMethod,
+        customerNotes: formData.customerNotes,
+      };
+      return orderService.create(orderData);
+    },
     onSuccess: () => {
       toast.success("Order placed successfully!");
       clearCart();
       navigate("/orders");
     },
-    onError: () => {
-      toast.error("Failed to place order");
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.data ||
+        error?.response?.data?.message ||
+        "Failed to place order";
+      toast.error(errorMessage);
     },
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
@@ -52,13 +86,14 @@ const CheckoutPage: React.FC = () => {
     createOrderMutation.mutate();
   };
 
+  // Calculate totals (matching backend calculation)
   const subtotal =
     cartItems?.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
+      (sum, item) => sum + Number(item.product.price) * item.quantity,
       0
     ) || 0;
-  const tax = subtotal * 0.1;
-  const shipping = subtotal > 100 ? 0 : 10;
+  const tax = subtotal * 0.075; // 7.5% tax
+  const shipping = 10.0; // Flat rate shipping
   const total = subtotal + tax + shipping;
 
   if (isLoading) {
@@ -113,18 +148,48 @@ const CheckoutPage: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 Contact Information
               </h2>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="shippingName"
+                    required
+                    value={formData.shippingName}
+                    onChange={handleChange}
+                    placeholder="John Doe"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="shippingEmail"
+                    required
+                    value={formData.shippingEmail}
+                    onChange={handleChange}
+                    placeholder="john@example.com"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="shippingPhone"
+                    value={formData.shippingPhone}
+                    onChange={handleChange}
+                    placeholder="+234 800 000 0000"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </div>
 
@@ -133,73 +198,78 @@ const CheckoutPage: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 Shipping Address
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name
+                    Street Address <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    name="firstName"
+                    name="shippingAddress"
                     required
-                    value={formData.firstName}
+                    value={formData.shippingAddress}
                     onChange={handleChange}
+                    placeholder="123 Main Street, Apartment 4B"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    required
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="shippingCity"
+                      required
+                      value={formData.shippingCity}
+                      onChange={handleChange}
+                      placeholder="Lagos"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      State
+                    </label>
+                    <input
+                      type="text"
+                      name="shippingState"
+                      value={formData.shippingState}
+                      onChange={handleChange}
+                      placeholder="Lagos"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  required
-                  value={formData.address}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    required
-                    value={formData.city}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ZIP Code
-                  </label>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    required
-                    value={formData.zipCode}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      ZIP/Postal Code <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="shippingZip"
+                      required
+                      value={formData.shippingZip}
+                      onChange={handleChange}
+                      placeholder="100001"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Country
+                    </label>
+                    <input
+                      type="text"
+                      name="shippingCountry"
+                      value={formData.shippingCountry}
+                      onChange={handleChange}
+                      disabled
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -209,63 +279,126 @@ const CheckoutPage: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 Payment Information
               </h2>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Card Number
-                </label>
-                <input
-                  type="text"
-                  name="cardNumber"
-                  required
-                  placeholder="1234 5678 9012 3456"
-                  value={formData.cardNumber}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Expiry Date
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Method <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="expiryDate"
+                  <select
+                    name="paymentMethod"
                     required
-                    placeholder="MM/YY"
-                    value={formData.expiryDate}
+                    value={formData.paymentMethod}
                     onChange={handleChange}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="card">Credit/Debit Card</option>
+                    <option value="transfer">Bank Transfer</option>
+                    <option value="cash">Cash on Delivery</option>
+                  </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    CVV
-                  </label>
-                  <input
-                    type="text"
-                    name="cvv"
-                    required
-                    placeholder="123"
-                    value={formData.cvv}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+
+                {formData.paymentMethod === "card" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Card Number
+                      </label>
+                      <input
+                        type="text"
+                        name="cardNumber"
+                        placeholder="1234 5678 9012 3456"
+                        value={formData.cardNumber}
+                        onChange={handleChange}
+                        maxLength={19}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Expiry Date
+                        </label>
+                        <input
+                          type="text"
+                          name="expiryDate"
+                          placeholder="MM/YY"
+                          value={formData.expiryDate}
+                          onChange={handleChange}
+                          maxLength={5}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          CVV
+                        </label>
+                        <input
+                          type="text"
+                          name="cvv"
+                          placeholder="123"
+                          value={formData.cvv}
+                          onChange={handleChange}
+                          maxLength={4}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Name on Card
+                      </label>
+                      <input
+                        type="text"
+                        name="nameOnCard"
+                        value={formData.nameOnCard}
+                        onChange={handleChange}
+                        placeholder="John Doe"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {formData.paymentMethod === "transfer" && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Bank Transfer Instructions:</strong>
+                      <br />
+                      After placing your order, you will receive bank details
+                      via email to complete the payment.
+                    </p>
+                  </div>
+                )}
+
+                {formData.paymentMethod === "cash" && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                    <p className="text-sm text-green-800">
+                      <strong>Cash on Delivery:</strong>
+                      <br />
+                      Pay with cash when your order is delivered to your
+                      address.
+                    </p>
+                  </div>
+                )}
               </div>
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name on Card
-                </label>
-                <input
-                  type="text"
-                  name="nameOnCard"
-                  required
-                  value={formData.nameOnCard}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+            </div>
+
+            {/* Order Notes */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Order Notes{" "}
+                <span className="text-gray-500 text-sm font-normal">
+                  (Optional)
+                </span>
+              </h2>
+              <textarea
+                name="customerNotes"
+                value={formData.customerNotes}
+                onChange={handleChange}
+                rows={4}
+                placeholder="Any special instructions for your order? (e.g., delivery time preferences, gift message, etc.)"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
             </div>
           </div>
 
@@ -276,35 +409,35 @@ const CheckoutPage: React.FC = () => {
                 Order Summary
               </h2>
 
-              <div className="space-y-3 mb-4">
+              <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
-                    <span>
+                    <span className="text-gray-700 flex-1">
                       {item.product.name} × {item.quantity}
                     </span>
-                    <span>
-                      {formatCurrency(item.product.price * item.quantity)}
+                    <span className="font-medium ml-4">
+                      {formatCurrency(
+                        Number(item.product.price) * item.quantity
+                      )}
                     </span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t pt-3 space-y-2">
+              <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Tax (10%)</span>
+                  <span>Tax (7.5%)</span>
                   <span>{formatCurrency(tax)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
-                  <span>
-                    {shipping === 0 ? "FREE" : formatCurrency(shipping)}
-                  </span>
+                  <span>{formatCurrency(shipping)}</span>
                 </div>
-                <div className="border-t pt-3">
+                <div className="border-t pt-3 mt-3">
                   <div className="flex justify-between text-lg font-bold text-gray-900">
                     <span>Total</span>
                     <span>{formatCurrency(total)}</span>
@@ -314,10 +447,10 @@ const CheckoutPage: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={createOrderMutation.isLoading}
-                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 disabled:opacity-50 font-semibold mt-6"
+                disabled={createOrderMutation.isPending}
+                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold mt-6 transition-colors duration-200"
               >
-                {createOrderMutation.isLoading
+                {createOrderMutation.isPending
                   ? "Placing Order..."
                   : "Place Order"}
               </button>

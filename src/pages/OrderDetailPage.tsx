@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Package, Calendar, DollarSign, Truck } from "lucide-react";
 import { orderService } from "../services/api";
 import { formatCurrency } from "../libs/utils";
+// import type { Product } from "../types";
 // import type { Order } from "../types";
 
 const OrderDetailPage: React.FC = () => {

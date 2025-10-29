@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
-import { AppInitializer } from "./components/AppInitializer";
+// import { AppInitializer } from "./components/AppInitializer";
 import ProductDetailPage from "./pages/ProductDetailPage";
-import CartPage from "./pages/cartPage";
+import CartPage from "./pages/CartPage"
 import OrdersPage from "./pages/OrdersPage";
 import WishlistPage from "./pages/WishlistPage";
 import HomePage from "./pages/HomePage";
@@ -48,7 +48,7 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppInitializer>
+      {/* <AppInitializer> */}
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<MainLayout />}>
@@ -79,7 +79,7 @@ function App() {
             </Route>
           </Routes>
         </BrowserRouter>
-      </AppInitializer>
+      {/* </AppInitializer> */}
       <Toaster position="top-right" />
     </QueryClientProvider>
   );
