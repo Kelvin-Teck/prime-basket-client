@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { Header } from "../common/Header";
-// import { Footer } from "../common/Footer";
+import { Footer } from "../common/Footer";
 
 const MainLayout: React.FC = () => {
   return (
@@ -9,7 +9,7 @@ const MainLayout: React.FC = () => {
       <main className="flex-1">
         <Outlet />
       </main>
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 };

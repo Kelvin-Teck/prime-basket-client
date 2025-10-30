@@ -1,5 +1,13 @@
+// src/stores/cartStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+
+interface CartItem {
+  id: string;
+  productId: string;
+  quantity: number;
+  product?: any; // Full product data from server
+}
 
 interface CartStore {
   // UI state for cart
@@ -15,7 +23,8 @@ interface CartStore {
   addItem: (productId: string) => void;
   removeItem: (productId: string) => void;
   clearCart: () => void;
-  syncWithServer: (serverCart: any[]) => void; // Sync with React Query data
+  setCartCount: (count: number) => void;
+  syncWithServer: (serverCart: CartItem[]) => void; // Sync with React Query data
 }
 
 export const useCartStore = create<CartStore>()(
@@ -48,12 +57,24 @@ export const useCartStore = create<CartStore>()(
 
       clearCart: () => set({ cartItems: [], cartCount: 0 }),
 
-      syncWithServer: (serverCart: any[]) => {
-        const serverItems = serverCart.map((item) => item.product.id);
+      setCartCount: (count: number) => set({ cartCount: count }),
+
+      syncWithServer: (serverCart: CartItem[]) => {
+        // Extract product IDs from server cart
+        const serverItems = serverCart.map(
+          (item) => item.productId || item.product?.id || item.id
+        );
+
+        // Calculate total quantity
         const serverCount = serverCart.reduce(
           (sum, item) => sum + item.quantity,
           0
         );
+
+        console.log("🔄 Syncing cart with server:", {
+          items: serverItems.length,
+          totalCount: serverCount,
+        });
 
         set({
           cartItems: serverItems,
@@ -66,6 +87,7 @@ export const useCartStore = create<CartStore>()(
       partialize: (state) => ({
         cartItems: state.cartItems,
         cartCount: state.cartCount,
+        // Don't persist isCartOpen - should always start closed
       }),
     }
   )

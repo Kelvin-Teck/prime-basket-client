@@ -1,35 +1,63 @@
-import { useEffect } from "react";
+// src/components/AppInitializer.tsx
+import { useEffect, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { useCartStore } from "../stores/cartStore";
-// import { usePreferencesStore } from "../stores/preferenceStore";
 
 export const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const [isReady, setIsReady] = useState(false);
   const initializeAuth = useAuthStore((state) => state.initialize);
-  const syncCart = useCartStore((state) => state.syncWithServer);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
-    console.log("Initializing app from localStorage...");
+    console.log("🚀 Starting app initialization...");
 
-    // Initialize all stores (they auto-load from localStorage via persist)
-    initializeAuth();
+    // Give Zustand persist a moment to rehydrate from localStorage
+    const initTimer = setTimeout(() => {
+      // Now call initialize to check and restore auth if needed
+      initializeAuth();
 
-    // Check for theme preference
-    const preferences = localStorage.getItem("preferences-storage");
-    if (preferences) {
+      // Log final auth state
+      console.log("📊 Final Auth State:", {
+        isAuthenticated,
+        hasToken: !!localStorage.getItem("token"),
+        hasUser: !!localStorage.getItem("user"),
+      });
+
+      // Handle theme preference
       try {
-        const parsed = JSON.parse(preferences);
-        if (parsed.state?.theme === "dark") {
-          document.documentElement.classList.add("dark");
+        const preferences = localStorage.getItem("preferences-storage");
+        if (preferences) {
+          const parsed = JSON.parse(preferences);
+          if (parsed.state?.theme === "dark") {
+            document.documentElement.classList.add("dark");
+          }
         }
       } catch (error) {
-        console.warn("Failed to parse preferences from localStorage" + error);
+        console.warn("⚠️ Failed to load preferences:", error);
       }
-    }
 
-    console.log("App initialization complete");
-  }, [initializeAuth]);
+      setIsReady(true);
+      console.log("✅ App initialization complete!");
+    }, 100); // 100ms delay for persist to finish
+
+    return () => clearTimeout(initTimer);
+  }, [initializeAuth, isAuthenticated]);
+
+  // Show loading screen while initializing
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">
+            Loading your session...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 };

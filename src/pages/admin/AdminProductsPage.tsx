@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { Plus, Edit, Trash2} from "lucide-react";
 import { productService } from "../../services/api";
-import { ProductForm } from "../../components/admin/ProductForm";
+import { ProductForm }  from "../../components/admin/ProductForm";
 import type { Product } from "../../types";
 import { formatCurrency } from "../../libs/utils";
 
