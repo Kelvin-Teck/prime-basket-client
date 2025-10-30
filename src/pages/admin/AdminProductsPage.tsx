@@ -7,6 +7,7 @@ import { productService } from "../../services/api";
 import { ProductForm } from "../../components/admin/ProductForm";
 import { formatCurrency } from "../../libs/utils";
 import type { Product } from "../../types";
+import type { AxiosError } from "axios";
 
 const AdminProductsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,8 +32,10 @@ const AdminProductsPage: React.FC = () => {
       toast.success("Product deleted successfully!");
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: () => {
-      toast.error("Failed to delete product");
+    onError: (error: AxiosError) => {
+      const message = error.response?.data?.data || error.response?.data?.message || error.message;
+
+      toast.error(`Failed to delete product: ${message}`);
     },
   });
 

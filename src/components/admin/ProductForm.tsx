@@ -107,9 +107,9 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       const response = await fetch(
         `${
           import.meta.env.VITE_API_URL || "http://localhost:5000/api"
-        }/products`,
+        }/products/${isEditMode ? productId : ""}`,
         {
-          method: "POST",
+          method: isEditMode ?  "PUT" : "POST",
           headers: {
             Authorization: `Bearer ${token}`,
           },
